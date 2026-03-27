@@ -1,0 +1,7 @@
+{
+  "name": "Remix: Swar-Auth",
+  "description": "Neural Voice Security — Pure Sound Zero. Safeguarding victims from voice fraud with military-grade biometric authentication.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
