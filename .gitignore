@@ -1,8 +1,30 @@
-node_modules/
-build/
-dist/
-coverage/
-.DS_Store
-*.log
-.env*
+# Dependencies
+**/node_modules/
+**/.venv/
+
+# Environment and secrets
+**/.env
+**/.env.*
 !.env.example
+
+# Frontend and server build output
+**/dist/
+**/build/
+
+# Runtime data and logs
+**/uploads/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local databases and generated stores
+**/database/*.json
+
+# Large local model files
+**/pretrained_models/
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
+Thumbs.db

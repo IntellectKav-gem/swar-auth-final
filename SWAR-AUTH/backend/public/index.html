@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWAR-AUTH | Voice Attendance Management Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-sidebar: #1e293b;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    header {
+      height: 64px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand-badge {
+      background: var(--accent-primary);
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-badge {
+      background: #334155;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .role-tag {
+      background: var(--accent-primary);
+      color: #fff;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* MAIN LAYOUT: SIDEBAR + CONTENT */
+    .app-container {
+      display: flex;
+      flex: 1;
+    }
+
+    /* SIDEBAR */
+    aside {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 0.75rem;
+      gap: 0.25rem;
+      min-height: calc(100vh - 64px);
+    }
+
+    .nav-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 0.5rem 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: var(--accent-primary);
+      color: #fff;
+    }
+
+    .nav-item.highlight-take {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .nav-item.highlight-mark {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* CONTENT VIEW AREA */
+    .content-area {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* CARDS & UTILITIES */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .stat-val { font-size: 1.9rem; font-weight: 700; color: #fff; margin-top: 0.3rem; }
+    .stat-lbl { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+    /* BUTTONS & INPUTS */
+    .btn {
+      padding: 0.7rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary { background: var(--accent-primary); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--accent-success); color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: var(--accent-danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
+    .btn-outline:hover { background: #334155; }
+
+    .input-field {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-field:focus { outline: none; border-color: var(--accent-primary); }
+
+    /* DURATION TOGGLE BUTTONS */
+    .duration-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .duration-btn {
+      flex: 1;
+      padding: 0.75rem;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .duration-btn.selected {
+      background: var(--accent-primary);
+      color: #fff;
+      border-color: var(--accent-primary);
+    }
+
+    /* COUNTDOWN & ACTIVE SESSION BANNER */
+    .active-session-banner {
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+      border: 1px solid var(--accent-primary);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .countdown-display {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #38bdf8;
+      font-family: monospace;
+      letter-spacing: 2px;
+    }
+
+    .alert-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--accent-warning);
+      color: #fbbf24;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 0.9rem; }
+    th { color: var(--text-muted); font-weight: 600; background: #0f172a; }
+
+    .badge {
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <span>SWAR-AUTH</span>
+      <span class="brand-badge">Voice Biometrics v2.0</span>
+    </div>
+    <div class="header-user">
+      <div class="user-badge" id="userPill">
+        <span id="headerUserName">Guest</span>
+        <span class="role-tag" id="headerUserRole">Offline</span>
+      </div>
+      <button class="btn btn-outline hidden" id="logoutHeaderBtn" onclick="handleLogout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- AUTH FORM CONTAINER (When not logged in) -->
+  <div id="authContainer" class="content-area" style="max-width: 480px; margin-top: 3rem;">
+    <div class="card">
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" id="tabLogin" onclick="switchAuthTab('login')" style="flex:1;">Sign In</button>
+        <button class="btn btn-outline" id="tabRegister" onclick="switchAuthTab('register')" style="flex:1;">Create Account</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <label style="font-size:0.85rem; color:var(--text-muted);">Email Address</label>
+        <input type="email" id="loginEmail" class="input-field" placeholder="user@swarauth.com" required>
+        
+        <label style="font-size:0.85rem; color:var(--text-muted);">Password</label>
+        <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Sign In</button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+        <label style="font-size:0.85rem; color:var(--text-muted);">Full Name</label>
+        <input type="text" id="regName" class="input-field" placeholder="Dr. Alan Turing / Ada Lovelace" required>
+
+        <label style="font-size:0.85rem; color:var(--text-muted);">Email Address</label>
+        <input type="email" id="regEmail" class="input-field" placeholder="user@domain.com" required>
+
+        <label style="font-size:0.85rem; color:var(--text-muted);">Password</label>
+        <input type="password" id="regPassword" class="input-field" placeholder="••••••••" required>
+
+        <label style="font-size:0.85rem; color:var(--text-muted);">Account Role</label>
+        <select id="regRole" class="input-field" onchange="toggleRegRoleFields()">
+          <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+        </select>
+
+        <div id="studentFields">
+          <label style="font-size:0.85rem; color:var(--text-muted);">Roll Number</label>
+          <input type="text" id="regRoll" class="input-field" placeholder="CSE-2026-001">
+
+          <label style="font-size:0.85rem; color:var(--text-muted);">Department</label>
+          <input type="text" id="regDeptStudent" class="input-field" value="Computer Science">
+
+          <div style="display:flex; gap:0.5rem;">
+            <div style="flex:1;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Semester (1-8)</label>
+              <input type="number" id="regSemester" class="input-field" value="6" min="1" max="8">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Section</label>
+              <input type="text" id="regSection" class="input-field" value="A">
+            </div>
+          </div>
+        </div>
+
+        <div id="facultyFields" class="hidden">
+          <label style="font-size:0.85rem; color:var(--text-muted);">Department</label>
+          <input type="text" id="regDeptFaculty" class="input-field" value="Computer Science">
+
+          <label style="font-size:0.85rem; color:var(--text-muted);">Designation</label>
+          <input type="text" id="regDesignation" class="input-field" placeholder="Associate Professor">
+        </div>
+
+        <button type="submit" class="btn btn-success" style="width:100%; margin-top:0.5rem;">Register Account</button>
+      </form>
+
+      <div id="authMessage" style="margin-top:1rem; font-size:0.85rem; text-align:center;"></div>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION CONTAINER (When logged in) -->
+  <div id="mainApp" class="app-container hidden">
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="nav-header" id="sidebarRoleLabel">NAVIGATION</div>
+      <div id="sidebarMenu"></div>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+      <!-- VIEWS -->
+      <div id="viewContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    let currentUser = null;
+    let authToken = localStorage.getItem('swar_token');
+    let selectedDuration = 10;
+    let countdownTimerInterval = null;
+
+    // INITIALIZATION
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (authToken) {
+        await fetchCurrentUser();
+      }
+    });
+
+    async function fetchCurrentUser() {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          setupLoggedInState();
+        } else {
+          handleLogout();
+        }
+      } catch (err) {
+        console.error('Session restore error:', err);
+        handleLogout();
+      }
+    }
+
+    function switchAuthTab(type) {
+      if (type === 'login') {
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('tabLogin').className = 'btn btn-primary';
+        document.getElementById('tabRegister').className = 'btn btn-outline';
+      } else {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
+        document.getElementById('tabLogin').className = 'btn btn-outline';
+        document.getElementById('tabRegister').className = 'btn btn-primary';
+      }
+    }
+
+    function toggleRegRoleFields() {
+      const role = document.getElementById('regRole').value;
+      if (role === 'student') {
+        document.getElementById('studentFields').classList.remove('hidden');
+        document.getElementById('facultyFields').classList.add('hidden');
+      } else {
+        document.getElementById('studentFields').classList.add('hidden');
+        document.getElementById('facultyFields').classList.remove('hidden');
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const msg = document.getElementById('authMessage');
+      msg.innerHTML = '<span style="color:var(--text-muted);">Authenticating...</span>';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          authToken = data.token;
+          localStorage.setItem('swar_token', authToken);
+          currentUser = data.user;
+          setupLoggedInState();
+        } else {
+          msg.innerHTML = `<span style="color:var(--accent-danger);">${data.error || 'Login failed'}</span>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Network error</span>`;
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const role = document.getElementById('regRole').value;
+      const msg = document.getElementById('authMessage');
+
+      const payload = {
+        name: document.getElementById('regName').value,
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+        role
+      };
+
+      if (role === 'student') {
+        payload.roll_number = document.getElementById('regRoll').value;
+        payload.department = document.getElementById('regDeptStudent').value;
+        payload.semester = document.getElementById('regSemester').value;
+        payload.section = document.getElementById('regSection').value;
+      } else {
+        payload.department = document.getElementById('regDeptFaculty').value;
+        payload.designation = document.getElementById('regDesignation').value;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          authToken = data.token;
+          localStorage.setItem('swar_token', authToken);
+          currentUser = data.user;
+          setupLoggedInState();
+        } else {
+          msg.innerHTML = `<span style="color:var(--accent-danger);">${data.error || 'Registration failed'}</span>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Network error</span>`;
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('swar_token');
+      authToken = null;
+      currentUser = null;
+      if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+      document.getElementById('authContainer').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('logoutHeaderBtn').classList.add('hidden');
+      document.getElementById('headerUserName').innerText = 'Guest';
+      document.getElementById('headerUserRole').innerText = 'Offline';
+    }
+
+    function setupLoggedInState() {
+      document.getElementById('authContainer').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('logoutHeaderBtn').classList.remove('hidden');
+      document.getElementById('headerUserName').innerText = currentUser.name;
+      document.getElementById('headerUserRole').innerText = currentUser.role;
+
+      renderSidebarMenu();
+      navigateView('dashboard');
+    }
+
+    // RENDER ROLE-SPECIFIC SIDEBARS
+    function renderSidebarMenu() {
+      const menu = document.getElementById('sidebarMenu');
+      const roleLabel = document.getElementById('sidebarRoleLabel');
+      menu.innerHTML = '';
+
+      if (currentUser.role === 'faculty') {
+        roleLabel.innerText = 'FACULTY PORTAL';
+        menu.innerHTML = `
+          <a class="nav-item active" id="nav-dashboard" onclick="navigateView('dashboard')">📊 Dashboard</a>
+          <a class="nav-item" id="nav-subjects" onclick="navigateView('subjects')">📚 My Subjects</a>
+          <a class="nav-item highlight-take" id="nav-take-attendance" onclick="navigateView('take-attendance')">🎙️ Take Attendance</a>
+          <a class="nav-item" id="nav-students" onclick="navigateView('students')">🎓 Students</a>
+          <a class="nav-item" id="nav-enrollment" onclick="navigateView('enrollment')">🗣️ Voice Enrollment</a>
+          <a class="nav-item" id="nav-records" onclick="navigateView('records')">📜 Attendance Records</a>
+          <a class="nav-item" id="nav-reports" onclick="navigateView('reports')">📈 Reports</a>
+          <a class="nav-item" id="nav-profile" onclick="navigateView('profile')">👤 Profile</a>
+          <a class="nav-item" onclick="handleLogout()">🚪 Logout</a>
+        `;
+      } else if (currentUser.role === 'student') {
+        roleLabel.innerText = 'STUDENT PORTAL';
+        menu.innerHTML = `
+          <a class="nav-item active" id="nav-dashboard" onclick="navigateView('dashboard')">📊 Dashboard</a>
+          <a class="nav-item highlight-mark" id="nav-mark-attendance" onclick="navigateView('mark-attendance')">🎙️ Mark Attendance</a>
+          <a class="nav-item" id="nav-my-attendance" onclick="navigateView('my-attendance')">📈 My Attendance</a>
+          <a class="nav-item" id="nav-subjects" onclick="navigateView('subjects')">📚 My Subjects</a>
+          <a class="nav-item" id="nav-history" onclick="navigateView('history')">📜 Attendance History</a>
+          <a class="nav-item" id="nav-profile" onclick="navigateView('profile')">👤 Profile</a>
+          <a class="nav-item" onclick="handleLogout()">🚪 Logout</a>
+        `;
+      } else if (currentUser.role === 'admin') {
+        roleLabel.innerText = 'ADMIN PORTAL';
+        menu.innerHTML = `
+          <a class="nav-item active" id="nav-dashboard" onclick="navigateView('dashboard')">📊 Dashboard</a>
+          <a class="nav-item" id="nav-students" onclick="navigateView('students')">🎓 Students</a>
+          <a class="nav-item" id="nav-faculty" onclick="navigateView('faculty')">👨‍🏫 Faculty</a>
+          <a class="nav-item" id="nav-subjects" onclick="navigateView('subjects')">📚 Subjects</a>
+          <a class="nav-item" id="nav-reports" onclick="navigateView('reports')">📈 Reports</a>
+          <a class="nav-item" id="nav-profile" onclick="navigateView('profile')">👤 Profile</a>
+          <a class="nav-item" onclick="handleLogout()">🚪 Logout</a>
+        `;
+      }
+    }
+
+    // VIEW ROUTING
+    function navigateView(viewName) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      if (activeNav && !activeNav.classList.contains('highlight-take') && !activeNav.classList.contains('highlight-mark')) {
+        activeNav.classList.add('active');
+      }
+
+      if (currentUser.role === 'faculty') {
+        switch (viewName) {
+          case 'dashboard': renderFacultyDashboard(); break;
+          case 'take-attendance': renderFacultyTakeAttendance(); break;
+          case 'subjects': renderFacultySubjects(); break;
+          case 'students': renderFacultyStudents(); break;
+          case 'enrollment': renderFacultyEnrollment(); break;
+          case 'records': renderFacultyRecords(); break;
+          case 'reports': renderFacultyReports(); break;
+          case 'profile': renderProfile(); break;
+        }
+      } else if (currentUser.role === 'student') {
+        switch (viewName) {
+          case 'dashboard': renderStudentDashboard(); break;
+          case 'mark-attendance': renderStudentMarkAttendance(); break;
+          case 'my-attendance': renderStudentMyAttendance(); break;
+          case 'subjects': renderStudentSubjects(); break;
+          case 'history': renderStudentHistory(); break;
+          case 'profile': renderProfile(); break;
+        }
+      } else if (currentUser.role === 'admin') {
+        switch (viewName) {
+          case 'dashboard': renderAdminDashboard(); break;
+          case 'students': renderAdminStudents(); break;
+          case 'faculty': renderAdminFaculty(); break;
+          case 'subjects': renderAdminSubjects(); break;
+          case 'reports': renderAdminReports(); break;
+          case 'profile': renderProfile(); break;
+        }
+      }
+    }
+
+    // FACULTY VIEW RENDERERS
+    async function renderFacultyDashboard() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading dashboard...</div>`;
+
+      try {
+        const [subRes, histRes, activeRes] = await Promise.all([
+          fetch(`${API_BASE}/faculty/subjects`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch(`${API_BASE}/faculty/attendance/history`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch(`${API_BASE}/faculty/sessions/active`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+        ]);
+
+        const subjects = await subRes.json();
+        const history = await histRes.json();
+        const activeData = await activeRes.json();
+
+        container.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2>Faculty Dashboard</h2>
+            <button class="btn btn-success" onclick="navigateView('take-attendance')">🎙️ Take Attendance</button>
+          </div>
+
+          ${activeData.active ? `
+            <div class="active-session-banner">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <span class="badge badge-success">LIVE SESSION ACTIVE</span>
+                  <h3 style="margin-top:0.5rem; font-size:1.4rem;">${activeData.session.subject_name} (${activeData.session.subject_code})</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted);">Semester ${activeData.session.semester} • Section ${activeData.session.section}</p>
+                </div>
+                <div style="text-align:right;">
+                  <div class="countdown-display" id="dashCountdown">--:--</div>
+                  <button class="btn btn-danger" style="margin-top:0.5rem;" onclick="endSession('${activeData.session.id}')">Close Attendance</button>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="grid-stats">
+            <div class="stat-card">
+              <div class="stat-lbl">Total Assigned Subjects</div>
+              <div class="stat-val">${Array.isArray(subjects) ? subjects.length : 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Total Sessions Conducted</div>
+              <div class="stat-val">${Array.isArray(history) ? history.length : 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Today's Attendance Count</div>
+              <div class="stat-val">${Array.isArray(history) ? history.filter(h => h.date === new Date().toISOString().split('T')[0]).reduce((acc, h) => acc + h.total_present, 0) : 0}</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent Attendance Sessions</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Date</th>
+                  <th>Sem/Sec</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th>Total Present</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${Array.isArray(history) && history.length > 0 ? history.map(h => `
+                  <tr>
+                    <td><strong>${h.subject_name}</strong> (${h.subject_code})</td>
+                    <td>${h.date}</td>
+                    <td>Sem ${h.semester} - ${h.section}</td>
+                    <td>${h.duration || 10} mins</td>
+                    <td><span class="badge ${h.status === 'active' ? 'badge-success' : 'badge-danger'}">${h.status.toUpperCase()}</span></td>
+                    <td><strong>${h.total_present}</strong> students</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No sessions recorded yet</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        if (activeData.active && activeData.session.remaining_seconds) {
+          startLiveTimer(activeData.session.remaining_seconds, 'dashCountdown');
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="alert-banner">Error loading faculty dashboard: ${err.message}</div>`;
+      }
+    }
+
+    async function renderFacultyTakeAttendance() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading Take Attendance view...</div>`;
+
+      try {
+        const [subRes, activeRes] = await Promise.all([
+          fetch(`${API_BASE}/faculty/subjects`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch(`${API_BASE}/faculty/sessions/active`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+        ]);
+
+        const subjects = await subRes.json();
+        const activeData = await activeRes.json();
+
+        if (activeData.active) {
+          renderActiveFacultySessionView(container, activeData.session);
+          return;
+        }
+
+        container.innerHTML = `
+          <h2>🎙️ Take Attendance</h2>
+          <p style="color:var(--text-muted); margin-bottom:1.5rem;">Select subject, semester, section, and session duration to launch attendance recording.</p>
+
+          <div class="card" style="max-width:560px;">
+            <div class="card-title" style="margin-bottom:1.25rem;">Start Attendance Session</div>
+            <form onsubmit="handleStartSession(event)">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Assigned Subject</label>
+              <select id="startSubjectId" class="input-field" required>
+                ${Array.isArray(subjects) && subjects.length > 0 ? subjects.map(s => `
+                  <option value="${s.id}">${s.subject_name} (${s.subject_code}) - Sem ${s.semester}</option>
+                `).join('') : '<option value="">No subjects assigned to you</option>'}
+              </select>
+
+              <div style="display:flex; gap:0.75rem;">
+                <div style="flex:1;">
+                  <label style="font-size:0.85rem; color:var(--text-muted);">Semester</label>
+                  <select id="startSemester" class="input-field">
+                    <option value="6">Semester 6</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                    <option value="3">Semester 3</option>
+                    <option value="4">Semester 4</option>
+                    <option value="5">Semester 5</option>
+                    <option value="7">Semester 7</option>
+                    <option value="8">Semester 8</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <label style="font-size:0.85rem; color:var(--text-muted);">Section</label>
+                  <select id="startSection" class="input-field">
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                  </select>
+                </div>
+              </div>
+
+              <label style="font-size:0.85rem; color:var(--text-muted); margin-top:0.5rem; display:block;">Session Duration (Minutes)</label>
+              <div class="duration-group">
+                <div class="duration-btn selected" id="dur10" onclick="selectDuration(10)">10 Mins</div>
+                <div class="duration-btn" id="dur12" onclick="selectDuration(12)">12 Mins</div>
+                <div class="duration-btn" id="dur15" onclick="selectDuration(15)">15 Mins</div>
+              </div>
+
+              <button type="submit" class="btn btn-success" style="width:100%; font-size:1rem; padding:0.85rem;">🎙️ Start Attendance Session</button>
+            </form>
+            <div id="startMsg" style="margin-top:1rem; font-size:0.85rem;"></div>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div class="alert-banner">Error loading take attendance view: ${err.message}</div>`;
+      }
+    }
+
+    function selectDuration(mins) {
+      selectedDuration = mins;
+      document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById(`dur${mins}`).classList.add('selected');
+    }
+
+    async function handleStartSession(e) {
+      e.preventDefault();
+      const subject_id = document.getElementById('startSubjectId').value;
+      const semester = document.getElementById('startSemester').value;
+      const section = document.getElementById('startSection').value;
+      const msg = document.getElementById('startMsg');
+
+      if (!subject_id) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Please select an assigned subject</span>`;
+        return;
+      }
+
+      msg.innerHTML = `<span style="color:var(--text-muted);">Starting session...</span>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/faculty/sessions/start`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ subject_id, semester, section, duration: selectedDuration })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          renderFacultyTakeAttendance();
+        } else {
+          msg.innerHTML = `<span style="color:var(--accent-danger);">${data.error || 'Failed to start session'}</span>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Network error</span>`;
+      }
+    }
+
+    function renderActiveFacultySessionView(container, session) {
+      container.innerHTML = `
+        <div class="active-session-banner">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="badge badge-success">LIVE SESSION ACTIVE</span>
+              <h2 style="margin-top:0.5rem;">${session.subject_name} (${session.subject_code})</h2>
+              <p style="color:var(--text-muted);">Semester ${session.semester} • Section ${session.section} • ${session.duration || 10} Mins Duration</p>
+            </div>
+            <div style="text-align:right;">
+              <div class="stat-lbl">REMAINING TIME</div>
+              <div class="countdown-display" id="activeCountdown">--:--</div>
+              <button class="btn btn-danger" style="margin-top:0.5rem;" onclick="endSession('${session.id}')">🔴 Close Attendance</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-stats">
+          <div class="stat-card">
+            <div class="stat-lbl">Present Attendees</div>
+            <div class="stat-val" style="color:var(--accent-success);">${session.total_marked || 0}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-lbl">Remaining Students</div>
+            <div class="stat-val" style="color:var(--accent-warning);">${session.remaining_students || 0}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-lbl">Total Class Strength</div>
+            <div class="stat-val">${session.total_students || 0}</div>
+          </div>
+        </div>
+      `;
+
+      if (session.remaining_seconds) {
+        startLiveTimer(session.remaining_seconds, 'activeCountdown', () => {
+          renderFacultyTakeAttendance();
+        });
+      }
+    }
+
+    async function endSession(sessionId) {
+      if (!confirm('Are you sure you want to close this attendance session now? Once closed, it cannot be reopened.')) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/faculty/sessions/${sessionId}/end`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+          renderFacultyTakeAttendance();
+        }
+      } catch (err) {
+        alert('Failed to close session');
+      }
+    }
+
+    function startLiveTimer(totalSeconds, elementId, onExpire) {
+      if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+      let sec = totalSeconds;
+
+      function updateUI() {
+        if (sec <= 0) {
+          clearInterval(countdownTimerInterval);
+          const el = document.getElementById(elementId);
+          if (el) el.innerText = '00:00';
+          if (onExpire) onExpire();
+          return;
+        }
+        const mins = Math.floor(sec / 60);
+        const remSec = sec % 60;
+        const str = `${String(mins).padStart(2, '0')}:${String(remSec).padStart(2, '0')}`;
+        const el = document.getElementById(elementId);
+        if (el) el.innerText = str;
+        sec--;
+      }
+
+      updateUI();
+      countdownTimerInterval = setInterval(updateUI, 1000);
+    }
+
+    // STUDENT VIEW RENDERERS
+    async function renderStudentDashboard() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading student dashboard...</div>`;
+
+      try {
+        const [overallRes, activeRes] = await Promise.all([
+          fetch(`${API_BASE}/student/attendance/overall`, { headers: { 'Authorization': `Bearer ${authToken}` } }),
+          fetch(`${API_BASE}/student/sessions/active`, { headers: { 'Authorization': `Bearer ${authToken}` } })
+        ]);
+
+        const overall = await overallRes.json();
+        const activeSessions = await activeRes.json();
+
+        container.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2>Student Dashboard</h2>
+            <button class="btn btn-primary" onclick="navigateView('mark-attendance')">🎙️ Mark Attendance</button>
+          </div>
+
+          ${overall.is_low_attendance ? `
+            <div class="alert-banner">
+              <span>⚠️ <strong>Low Attendance Warning:</strong> Your overall attendance is currently <strong>${overall.overall_percentage}%</strong>, which is below the mandatory 75% threshold.</span>
+            </div>
+          ` : ''}
+
+          <div class="grid-stats">
+            <div class="stat-card">
+              <div class="stat-lbl">Overall Attendance Percentage</div>
+              <div class="stat-val" style="color:${overall.overall_percentage >= 75 ? 'var(--accent-success)' : 'var(--accent-danger)'};">${overall.overall_percentage}%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Total Attended Classes</div>
+              <div class="stat-val">${overall.total_attended} / ${overall.total_sessions}</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Active Attendance Sessions</div>
+            </div>
+            ${Array.isArray(activeSessions) && activeSessions.length > 0 ? activeSessions.map(s => `
+              <div style="background:#0f172a; border:1px solid var(--card-border); border-radius:10px; padding:1.25rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h4>${s.subject_name} (${s.subject_code})</h4>
+                  <p style="font-size:0.85rem; color:var(--text-muted);">Semester ${s.semester} • Section ${s.section}</p>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge ${s.is_already_marked ? 'badge-success' : 'badge-warning'}">${s.is_already_marked ? 'MARKED PRESENT' : 'ACTIVE SESSION'}</span>
+                  ${!s.is_already_marked ? `
+                    <div style="margin-top:0.5rem;">
+                      <button class="btn btn-primary btn-sm" onclick="navigateView('mark-attendance')">🎙️ Mark Attendance</button>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('') : '<p style="color:var(--text-muted); text-align:center;">No active attendance sessions currently in progress for your class.</p>'}
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div class="alert-banner">Error loading student dashboard: ${err.message}</div>`;
+      }
+    }
+
+    async function renderStudentMarkAttendance() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading active sessions...</div>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/student/sessions/active`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const activeSessions = await res.json();
+
+        container.innerHTML = `
+          <h2>🎙️ Mark Attendance</h2>
+          <p style="color:var(--text-muted); margin-bottom:1.5rem;">Submit your voice audio sample to authenticate and log your attendance for live active sessions.</p>
+
+          ${Array.isArray(activeSessions) && activeSessions.length > 0 ? activeSessions.map(s => `
+            <div class="card" style="max-width:600px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div>
+                  <h3 style="color:#fff;">${s.subject_name} (${s.subject_code})</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted);">Semester ${s.semester} • Section ${s.section}</p>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge ${s.is_already_marked ? 'badge-success' : 'badge-warning'}">${s.is_already_marked ? 'PRESENT' : 'ACTIVE'}</span>
+                  <div class="countdown-display" style="font-size:1.5rem; margin-top:0.25rem;" id="stdCountdown_${s.session_id}">--:--</div>
+                </div>
+              </div>
+
+              ${s.is_already_marked ? `
+                <div class="alert-banner" style="background:rgba(16,185,129,0.15); border-color:var(--accent-success); color:#34d399; margin-bottom:0;">
+                  ✅ You have already logged attendance for this session.
+                </div>
+              ` : `
+                <form onsubmit="handleVerifyVoice(event, '${s.session_id}')">
+                  <label style="font-size:0.85rem; color:var(--text-muted);">Select Voice Audio Sample (.wav)</label>
+                  <input type="file" id="audioFile_${s.session_id}" accept="audio/*" class="input-field" required>
+                  <button type="submit" class="btn btn-primary" style="width:100%;">🎙️ Authenticate Voice & Log Attendance</button>
+                </form>
+                <div id="verifyMsg_${s.session_id}" style="margin-top:1rem; font-size:0.85rem;"></div>
+              `}
+            </div>
+          `).join('') : `
+            <div class="card" style="text-align:center; padding:3rem;">
+              <p style="color:var(--text-muted); font-size:1.1rem;">No active attendance sessions currently in progress.</p>
+            </div>
+          `}
+        `;
+
+        if (Array.isArray(activeSessions)) {
+          activeSessions.forEach(s => {
+            if (s.remaining_seconds && !s.is_already_marked) {
+              startLiveTimer(s.remaining_seconds, `stdCountdown_${s.session_id}`, () => {
+                renderStudentMarkAttendance();
+              });
+            }
+          });
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="alert-banner">Error loading active sessions: ${err.message}</div>`;
+      }
+    }
+
+    async function handleVerifyVoice(e, sessionId) {
+      e.preventDefault();
+      const fileInput = document.getElementById(`audioFile_${sessionId}`);
+      const msg = document.getElementById(`verifyMsg_${sessionId}`);
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Please select an audio file</span>`;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('session_id', sessionId);
+      formData.append('audio', fileInput.files[0]);
+
+      msg.innerHTML = `<span style="color:var(--text-muted);">Authenticating speaker embedding...</span>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/voice/verify`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          msg.innerHTML = `<span style="color:var(--accent-success); font-weight:600;">✅ ${data.message} (Score: ${data.verification.score})</span>`;
+          setTimeout(() => renderStudentMarkAttendance(), 1500);
+        } else {
+          msg.innerHTML = `<span style="color:var(--accent-danger); font-weight:600;">❌ ${data.error || 'Voice verification failed'}</span>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Network error</span>`;
+      }
+    }
+
+    // FACULTY ENROLLMENT VIEW
+    function renderFacultyEnrollment() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `
+        <h2>🗣️ Faculty-Only Student Voice Enrollment</h2>
+        <p style="color:var(--text-muted); margin-bottom:1.5rem;">Register a student's 512-d ECAPA biometric voice profile. Exactly 5 voice sample files (.wav) are required.</p>
+
+        <div class="card" style="max-width:560px;">
+          <form onsubmit="handleFacultyEnrollment(event)">
+            <label style="font-size:0.85rem; color:var(--text-muted);">Student Roll Number</label>
+            <input type="text" id="enrollRoll" class="input-field" placeholder="CSE-2026-001" required>
+
+            <label style="font-size:0.85rem; color:var(--text-muted);">Select Exactly 5 Voice Audio Samples (.wav)</label>
+            <input type="file" id="enrollSamples" class="input-field" accept="audio/*" multiple required>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:-0.5rem; margin-bottom:1rem;">Hold Ctrl/Cmd to select exactly 5 files.</p>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;">🗣️ Register 5-Sample Voice Profile</button>
+          </form>
+          <div id="enrollMsg" style="margin-top:1rem; font-size:0.85rem;"></div>
+        </div>
+      `;
+    }
+
+    async function handleFacultyEnrollment(e) {
+      e.preventDefault();
+      const roll_number = document.getElementById('enrollRoll').value;
+      const fileInput = document.getElementById('enrollSamples');
+      const msg = document.getElementById('enrollMsg');
+
+      if (!fileInput.files || fileInput.files.length !== 5) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Exactly 5 voice sample files are required for enrollment</span>`;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('roll_number', roll_number);
+      for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('samples', fileInput.files[i]);
+      }
+
+      msg.innerHTML = `<span style="color:var(--text-muted);">Extracting SpeechBrain ECAPA speaker embeddings...</span>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/voice/enroll`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          msg.innerHTML = `<span style="color:var(--accent-success); font-weight:600;">✅ ${data.message}</span>`;
+        } else {
+          msg.innerHTML = `<span style="color:var(--accent-danger); font-weight:600;">❌ ${data.error || 'Enrollment failed'}</span>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<span style="color:var(--accent-danger);">Network error</span>`;
+      }
+    }
+
+    // GENERIC VIEW PLACEHOLDERS FOR REMAINING NAV ITEMS
+    function renderFacultySubjects() { renderSimpleTable('My Assigned Subjects', `${API_BASE}/faculty/subjects`, ['Subject Name', 'Code', 'Semester', 'Section']); }
+    function renderFacultyStudents() { renderSimpleTable('Student Roster', `${API_BASE}/admin/students`, ['Roll Number', 'Name', 'Semester', 'Section', 'Voice Enrolled']); }
+    function renderFacultyRecords() { renderSimpleTable('Attendance Records', `${API_BASE}/faculty/attendance/history`, ['Subject', 'Date', 'Sem/Sec', 'Status', 'Total Present']); }
+    function renderFacultyReports() { document.getElementById('viewContainer').innerHTML = `<h2>📈 Attendance Reports</h2><div class="card"><p style="color:var(--text-muted);">Select daily or subject reports from the navigation endpoints.</p></div>`; }
+
+    function renderStudentMyAttendance() { renderSimpleTable('My Subject Attendance Breakdown', `${API_BASE}/student/attendance/subject`, ['Subject Name', 'Code', 'Total Classes', 'Attended', 'Percentage']); }
+    function renderStudentSubjects() { renderSimpleTable('Enrolled Subjects', `${API_BASE}/student/attendance/subject`, ['Subject Name', 'Code', 'Attended Classes', 'Percentage']); }
+    function renderStudentHistory() { renderSimpleTable('Attendance History', `${API_BASE}/student/attendance/overall`, ['Subject Name', 'Date', 'Time', 'Status', 'Verification Score'], true); }
+
+    function renderAdminDashboard() { document.getElementById('viewContainer').innerHTML = `<h2>Admin Dashboard</h2><div class="card"><p style="color:var(--text-muted);">System statistics and management console.</p></div>`; }
+    function renderAdminStudents() { renderSimpleTable('Students Directory', `${API_BASE}/admin/students`, ['Roll Number', 'Name', 'Email', 'Department', 'Semester']); }
+    function renderAdminFaculty() { renderSimpleTable('Faculty Directory', `${API_BASE}/admin/faculty`, ['Name', 'Email', 'Department', 'Designation']); }
+    function renderAdminSubjects() { renderSimpleTable('Subjects Catalog', `${API_BASE}/admin/subjects`, ['Subject Name', 'Subject Code', 'Semester', 'Faculty Name']); }
+    function renderAdminReports() { document.getElementById('viewContainer').innerHTML = `<h2>Department Attendance Summary</h2><div class="card"><p style="color:var(--text-muted);">Department wide attendance statistics.</p></div>`; }
+
+    function renderProfile() {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `
+        <h2>👤 User Profile</h2>
+        <div class="card" style="max-width:500px;">
+          <p><strong>Name:</strong> ${currentUser.name}</p>
+          <p style="margin-top:0.5rem;"><strong>Email:</strong> ${currentUser.email}</p>
+          <p style="margin-top:0.5rem;"><strong>Role:</strong> <span class="badge badge-success">${currentUser.role.toUpperCase()}</span></p>
+        </div>
+      `;
+    }
+
+    async function renderSimpleTable(title, url, columns, isOverall = false) {
+      const container = document.getElementById('viewContainer');
+      container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading ${title}...</div>`;
+      try {
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        let data = await res.json();
+        if (isOverall && data.attendance_history) data = data.attendance_history;
+
+        container.innerHTML = `
+          <h2>${title}</h2>
+          <div class="card">
+            <table>
+              <thead>
+                <tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>
+              </thead>
+              <tbody>
+                ${Array.isArray(data) && data.length > 0 ? data.map(row => `
+                  <tr>
+                    ${Object.values(row).slice(0, columns.length).map(val => `<td>${typeof val === 'boolean' ? (val ? '✅ Yes' : '❌ No') : val}</td>`).join('')}
+                  </tr>
+                `).join('') : `<tr><td colspan="${columns.length}" style="text-align:center; color:var(--text-muted);">No records found</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div class="alert-banner">Failed to load data: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
