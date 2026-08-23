@@ -12,6 +12,7 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState({ totalStudents: 0, totalSubjects: 0, todayAttendance: 0, averageAttendance: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // Session form
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -24,22 +25,23 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   const [enrolledSamples, setEnrolledSamples] = useState([]);
   const [enrollLoading, setEnrollLoading] = useState(false);
 
-  const { isRecording, audioBlob, audioLevels, recordingTime, startRecording, stopRecording, generateSampleBlob } = useAudioRecorder();
+  const { isRecording, audioBlob, audioLevels, recordingTime, recordingError, startRecording, stopRecording } = useAudioRecorder();
 
   const loadFacultyData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const [subjRes, activeRes, histRes] = await Promise.all([
-        facultyApi.getSubjects().catch(() => []),
-        facultyApi.getActiveSession().catch(() => null),
-        facultyApi.getHistory().catch(() => []),
+        facultyApi.getSubjects(),
+        facultyApi.getActiveSession(),
+        facultyApi.getHistory(),
       ]);
 
       if (Array.isArray(subjRes)) {
         setSubjects(subjRes);
         if (subjRes.length > 0) setSelectedSubject(subjRes[0].id);
       }
-      if (activeRes && activeRes.session) setActiveSession(activeRes.session);
+      setActiveSession(activeRes?.active ? activeRes.session : null);
       if (Array.isArray(histRes)) {
         setHistory(histRes);
         const uniqueStudents = new Set(
@@ -57,6 +59,7 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
         });
       }
     } catch (err) {
+      setLoadError(err.message || 'Error fetching faculty details');
       setToast({ type: 'error', message: err.message || 'Error fetching faculty details' });
     } finally {
       setLoading(false);
@@ -144,6 +147,15 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   };
 
   if (loading) return <Loader text="Loading faculty workspace..." />;
+  if (loadError) {
+    return (
+      <div className="card">
+        <h3>Faculty data could not be loaded</h3>
+        <p className="text-muted">{loadError}</p>
+        <button type="button" className="btn btn-primary" onClick={loadFacultyData}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -213,7 +225,7 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
       )}
 
       {/* Voice Enrollment Tab / Section */}
-      {(activeTab === 'enrollment' || activeTab === 'dashboard') && (
+      {(activeTab === 'enrollment' || activeTab === 'students' || activeTab === 'dashboard') && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '0.5rem', borderRadius: '10px', color: 'var(--accent-primary)' }}>
@@ -246,6 +258,7 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                 <div style={{ fontSize: '0.9rem', color: isRecording ? 'var(--accent-danger)' : 'var(--text-muted)', marginBottom: '1rem', fontWeight: 500 }}>
                   {isRecording ? `Recording Sample #${enrolledSamples.length + 1}... (${recordingTime}s)` : `Ready for Sample #${enrolledSamples.length + 1}`}
                 </div>
+                {recordingError && <p className="text-muted" style={{ color: 'var(--accent-danger)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{recordingError}</p>}
 
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
                   {!isRecording ? (
@@ -267,16 +280,6 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    disabled={enrolledSamples.length >= 5 || isRecording}
-                    onClick={() => generateSampleBlob(440 + enrolledSamples.length * 50)}
-                    className="btn btn-secondary"
-                    style={{ fontSize: '0.8rem' }}
-                    title="Generate test WAV sample automatically"
-                  >
-                    Quick Add Sample
-                  </button>
                 </div>
               </div>
             </div>
@@ -307,7 +310,7 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                         fontSize: '0.85rem'
                       }}
                     >
-                      <span>Sample Audio File #{idx}.wav</span>
+                      <span>Recorded Voice Sample #{idx}</span>
                       {isDone ? (
                         <span style={{ color: 'var(--accent-success)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
                           <CheckCircle2 size={16} /> Captured
@@ -335,8 +338,30 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
         </div>
       )}
 
+      {/* Subject Directory */}
+      {activeTab === 'subjects' && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>My Subjects</h3>
+          <div className="table-container">
+            <table className="custom-table">
+              <thead><tr><th>Code</th><th>Subject</th><th>Semester</th><th>Section</th></tr></thead>
+              <tbody>
+                {subjects.length ? subjects.map(subject => (
+                  <tr key={subject.id}>
+                    <td>{subject.subject_code}</td>
+                    <td>{subject.subject_name}</td>
+                    <td>{subject.semester}</td>
+                    <td>{subject.section}</td>
+                  </tr>
+                )) : <tr><td colSpan="4">No subjects are assigned to you.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Attendance History */}
-      {(activeTab === 'dashboard' || activeTab === 'reports') && (
+      {(activeTab === 'dashboard' || activeTab === 'reports' || activeTab === 'records') && (
         <div className="card">
           <h3 style={{ marginBottom: '1rem' }}>Faculty Attendance History Log</h3>
           <div className="table-container">
@@ -354,8 +379,8 @@ export const FacultyDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                 {history.length > 0 ? (
                   history.map((h, idx) => (
                     <tr key={h.id || idx}>
-                      <td style={{ fontWeight: 600 }}>{h.id}</td>
-                      <td>{h.subject_id}</td>
+                      <td style={{ fontWeight: 600 }}>{h.id || '—'}</td>
+                      <td>{h.subject_code ? `${h.subject_code} — ${h.subject_name}` : h.subject_name || '—'}</td>
                       <td>Sem {h.semester}-{h.section}</td>
                       <td>{h.date}</td>
                       <td>

@@ -70,7 +70,7 @@ const enrollVoiceByFaculty = async (req, res) => {
     });
   } catch (err) {
     console.error('Faculty Voice enrollment error:', err);
-    return res.status(500).json({ error: err.message || 'Voice enrollment failed' });
+    return res.status(err.status || 500).json({ error: err.message || 'Voice enrollment failed', code: err.code });
   }
 };
 
@@ -101,7 +101,7 @@ const getVoiceStatus = async (req, res) => {
     });
   } catch (err) {
     console.error('Voice status error:', err);
-    return res.status(500).json({ error: err.message || 'Failed to get voice enrollment status' });
+    return res.status(err.status || 500).json({ error: err.message || 'Failed to get voice enrollment status', code: err.code });
   }
 };
 
@@ -199,7 +199,7 @@ const verifyVoiceAndLogAttendance = async (req, res) => {
     });
   } catch (err) {
     console.error('Voice verification error:', err);
-    return res.status(500).json({ error: err.message || 'Voice verification failed' });
+    return res.status(err.status || 500).json({ error: err.message || 'Voice verification failed', code: err.code });
   }
 };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Mic, Clock, BarChart3, Users, BookOpen, UserCircle, LogOut, ClipboardCheck } from 'lucide-react';
 
-const Sidebar = ({ user, activeTab, setActiveTab }) => {
+const Sidebar = ({ user, activeTab, setActiveTab, onLogout }) => {
   if (!user) return null;
 
   const role = user.role;
@@ -10,7 +10,7 @@ const Sidebar = ({ user, activeTab, setActiveTab }) => {
     ? [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'subjects', label: 'My Subjects', icon: BookOpen },
-        { id: 'sessions', label: '🎙️ Take Attendance', icon: Mic },
+        { id: 'sessions', label: 'Take Attendance', icon: Mic },
         { id: 'students', label: 'Students', icon: Users },
         { id: 'enrollment', label: 'Voice Enrollment', icon: ClipboardCheck },
         { id: 'records', label: 'Attendance Records', icon: Clock },
@@ -60,7 +60,7 @@ const Sidebar = ({ user, activeTab, setActiveTab }) => {
         return (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id === 'logout' ? 'dashboard' : item.id)}
+            onClick={() => item.id === 'logout' ? onLogout?.() : setActiveTab(item.id)}
             style={{
               display: 'flex',
               alignItems: 'center',

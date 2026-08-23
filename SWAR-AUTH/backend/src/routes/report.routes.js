@@ -11,8 +11,8 @@ const { authorizeRoles } = require('../middleware/rbac.middleware');
 
 router.use(authenticateToken);
 
-router.get('/faculty/daily', authorizeRoles('faculty', 'admin'), getFacultyDailyReport);
-router.get('/faculty/subject', authorizeRoles('faculty', 'admin'), getFacultySubjectReport);
+router.get('/faculty/daily', authorizeRoles('faculty'), getFacultyDailyReport);
+router.get('/faculty/subject', authorizeRoles('faculty'), getFacultySubjectReport);
 router.get('/admin/department', authorizeRoles('admin'), getAdminDepartmentReport);
 
 module.exports = router;

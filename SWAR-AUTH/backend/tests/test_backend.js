@@ -36,6 +36,34 @@ function createDummyWavBuffer(freq = 440) {
   return buffer;
 }
 
+function createNoiseWavBuffer(seed = 1) {
+  const sampleRate = 16000;
+  const numSamples = sampleRate;
+  const dataSize = numSamples * 2;
+  const buffer = Buffer.alloc(44 + dataSize);
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  let state = seed >>> 0;
+  for (let i = 0; i < numSamples; i++) {
+    state = (1664525 * state + 1013904223) >>> 0;
+    const sample = ((state / 0xffffffff) * 2 - 1) * 0.2;
+    buffer.writeInt16LE(Math.floor(sample * 32767), 44 + i * 2);
+  }
+  return buffer;
+}
+
 function request(method, pathUrl, headers = {}, body = null) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -263,7 +291,7 @@ async function runTests() {
   });
   const diffStudentToken = regStudentDiff.data.token;
   await uploadMultipleFiles('/api/voice/enroll', facultyToken, 'samples', sampleFiles, { roll_number: `DIFF-${timestamp.toString().substr(-4)}` });
-  const wavBufferDifferent = createDummyWavBuffer(880);
+  const wavBufferDifferent = createNoiseWavBuffer(timestamp);
   const verifyOther = await uploadFile('/api/voice/verify', diffStudentToken, 'audio', 'voice_diff.wav', wavBufferDifferent, {
     session_id: sessionId
   });

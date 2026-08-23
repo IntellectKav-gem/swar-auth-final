@@ -4,10 +4,10 @@ import { authApi } from './api/authApi';
 import Sidebar from './components/common/Sidebar';
 import Navbar from './components/common/Navbar';
 import Toast from './components/common/Toast';
-import SplineBackground from './components/common/SplineBackground';
 import { LoginPage } from './pages/LoginPage';
 import { FacultyDashboard } from './pages/FacultyDashboard';
 import { StudentDashboard } from './pages/StudentDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
 import './index.css';
 
 const App = () => {
@@ -70,8 +70,8 @@ const App = () => {
     const commonProps = { setToast, activeTab };
 
     return (
-      <div className="app-container">
-        <Sidebar user={user} activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="app-container">
+        <Sidebar user={user} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
         <div className="main-wrapper">
           <Navbar title={role === 'faculty' ? 'Faculty Dashboard' : role === 'student' ? 'Student Dashboard' : 'Admin Dashboard'} user={user} onLogout={handleLogout} />
           <main className="content-area">
@@ -79,10 +79,12 @@ const App = () => {
               <FacultyDashboard {...commonProps} />
             ) : role === 'student' ? (
               <StudentDashboard {...commonProps} user={user} />
+            ) : role === 'admin' ? (
+              <AdminDashboard {...commonProps} />
             ) : (
               <div className="card">
                 <h2>Access restricted</h2>
-                <p className="text-muted">This dashboard is reserved for faculty and student accounts.</p>
+                <p className="text-muted">This account does not have a supported dashboard role.</p>
               </div>
             )}
           </main>
@@ -101,7 +103,6 @@ const App = () => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SplineBackground />
     <App />
   </React.StrictMode>
 );

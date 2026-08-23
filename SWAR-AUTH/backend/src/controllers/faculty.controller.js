@@ -205,7 +205,7 @@ const getAttendanceHistory = async (req, res) => {
       });
 
       return {
-        session_id: sess.id,
+        id: sess.id,
         subject_name: subj.subject_name,
         subject_code: subj.subject_code,
         semester: sess.semester,

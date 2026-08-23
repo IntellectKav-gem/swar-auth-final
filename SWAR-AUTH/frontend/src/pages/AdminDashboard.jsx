@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../api/adminApi';
 import Loader from '../components/common/Loader';
-import { Users, GraduationCap, BookOpen, Activity, Plus, UserPlus, CheckCircle } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, Activity, Plus, UserPlus, Trash2 } from 'lucide-react';
 
 export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   const [stats, setStats] = useState(null);
@@ -69,6 +69,28 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
     }
   };
 
+  const handleDeleteStudent = async student => {
+    if (!window.confirm(`Delete student ${student.name || student.roll_number}?`)) return;
+    try {
+      await adminApi.deleteStudent(student.id);
+      setToast({ type: 'success', message: `Student ${student.roll_number} deleted.` });
+      await loadData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message || 'Failed to delete student' });
+    }
+  };
+
+  const handleDeleteFaculty = async faculty => {
+    if (!window.confirm(`Delete faculty member ${faculty.name || faculty.email}?`)) return;
+    try {
+      await adminApi.deleteFaculty(faculty.id);
+      setToast({ type: 'success', message: `Faculty member ${faculty.name || faculty.email} deleted.` });
+      await loadData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message || 'Failed to delete faculty member' });
+    }
+  };
+
   const handleCreateSubject = async (e) => {
     e.preventDefault();
     try {
@@ -114,7 +136,7 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
         <div className="stat-card">
           <div>
             <div className="text-muted" style={{ fontSize: '0.85rem' }}>Attendance Records</div>
-            <div className="stat-val" style={{ color: '#f59e0b' }}>{stats?.stats?.total_records ?? 0}</div>
+            <div className="stat-val" style={{ color: '#f59e0b' }}>{stats?.stats?.totalAttendanceRecords ?? 0}</div>
           </div>
           <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}><Activity size={24} /></div>
         </div>
@@ -152,6 +174,7 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                     <th>Roll Number</th>
                     <th>Name</th>
                     <th>Sem / Sec</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -160,6 +183,11 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                       <td style={{ fontWeight: 600 }}>{s.roll_number}</td>
                       <td>{s.users?.name || s.name}</td>
                       <td>Sem {s.semester} - {s.section}</td>
+                      <td>
+                        <button type="button" className="btn btn-danger" style={{ padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteStudent(s)} title="Delete student">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -192,6 +220,7 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                     <th>Faculty Name</th>
                     <th>Department</th>
                     <th>Designation</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,6 +229,11 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                       <td style={{ fontWeight: 600 }}>{f.users?.name || f.name}</td>
                       <td>{f.department}</td>
                       <td><span className="badge badge-primary">{f.designation}</span></td>
+                      <td>
+                        <button type="button" className="btn btn-danger" style={{ padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteFaculty(f)} title="Delete faculty member">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

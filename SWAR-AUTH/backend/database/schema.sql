@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS attendance_sessions (
     faculty_id TEXT NOT NULL REFERENCES faculty(id) ON DELETE CASCADE,
     semester INTEGER NOT NULL,
     section TEXT NOT NULL,
+    duration INTEGER NOT NULL DEFAULT 10 CHECK(duration IN (10, 12, 15)),
+    start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP,
     date TEXT NOT NULL, -- YYYY-MM-DD
     status TEXT CHECK(status IN ('active', 'closed')) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -66,5 +69,5 @@ CREATE TABLE IF NOT EXISTS attendance (
     status TEXT CHECK(status IN ('present', 'absent')) DEFAULT 'present',
     verification_score REAL DEFAULT 1.0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(student_id, subject_id, date)
+    UNIQUE(student_id, session_id)
 );

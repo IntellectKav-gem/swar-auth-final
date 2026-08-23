@@ -112,8 +112,7 @@ CREATE TABLE IF NOT EXISTS public.attendance (
     status VARCHAR(20) DEFAULT 'present' CHECK (status IN ('present', 'absent')),
     verification_score DOUBLE PRECISION DEFAULT 1.0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT unique_student_session UNIQUE (student_id, session_id),
-    CONSTRAINT unique_student_subject_date UNIQUE (student_id, subject_id, date)
+    CONSTRAINT unique_student_session UNIQUE (student_id, session_id)
 );
 
 -- ====================================================================

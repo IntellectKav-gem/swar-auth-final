@@ -10,28 +10,36 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
   const [voiceStatus, setVoiceStatus] = useState(null);
   const [activeSessions, setActiveSessions] = useState([]);
   const [history, setHistory] = useState([]);
+  const [subjectAttendance, setSubjectAttendance] = useState([]);
+  const [studentProfile, setStudentProfile] = useState(null);
   const [summary, setSummary] = useState({ overallPercentage: 0, todayAttendance: 0, totalSubjects: 0, alerts: [] });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // Verification Modal / Action state
   const [selectedSession, setSelectedSession] = useState(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
 
-  const { isRecording, audioBlob, audioLevels, recordingTime, startRecording, stopRecording, generateSampleBlob } = useAudioRecorder();
+  const { isRecording, audioBlob, audioLevels, recordingTime, recordingError, startRecording, stopRecording } = useAudioRecorder();
 
   const loadStudentData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const [vStatus, actSess, histRes] = await Promise.all([
-        voiceApi.getStatus().catch(() => null),
-        studentApi.getActiveSessions().catch(() => []),
-        studentApi.getHistory().catch(() => []),
+      const [vStatus, actSess, histRes, profileRes, subjectRes] = await Promise.all([
+        voiceApi.getStatus(),
+        studentApi.getActiveSessions(),
+        studentApi.getHistory(),
+        studentApi.getProfile(),
+        studentApi.getSubjectAttendance(),
       ]);
 
       if (vStatus) setVoiceStatus(vStatus);
       if (Array.isArray(actSess)) setActiveSessions(actSess);
       if (Array.isArray(histRes)) setHistory(histRes);
+      if (profileRes) setStudentProfile(profileRes);
+      if (Array.isArray(subjectRes)) setSubjectAttendance(subjectRes);
 
       const overallPercentage = histRes?.length ? Math.min(100, Math.round((histRes.length / Math.max(1, actSess.length + histRes.length)) * 100)) : 0;
       const todayKey = new Date().toISOString().slice(0, 10);
@@ -44,6 +52,7 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
         alerts
       });
     } catch (err) {
+      setLoadError(err.message || 'Error loading student data');
       setToast({ type: 'error', message: err.message || 'Error loading student data' });
     } finally {
       setLoading(false);
@@ -60,11 +69,12 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
       setToast({ type: 'error', message: 'Please select an active session for verification' });
       return;
     }
-    let blobToUpload = audioBlob;
-    if (!blobToUpload) {
-      blobToUpload = generateSampleBlob(440);
+    if (!audioBlob) {
+      setToast({ type: 'error', message: 'Record a real voice sample before submitting verification.' });
+      return;
     }
 
+    const blobToUpload = audioBlob;
     setVerifyLoading(true);
     setVerificationResult(null);
 
@@ -85,6 +95,17 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
   };
 
   if (loading) return <Loader text="Loading student workspace..." />;
+  if (loadError) {
+    return (
+      <div className="card">
+        <h3>Student data could not be loaded</h3>
+        <p className="text-muted">{loadError}</p>
+        <button type="button" className="btn btn-primary" onClick={loadStudentData}>Retry</button>
+      </div>
+    );
+  }
+
+  const profile = studentProfile || user?.profile || {};
 
   return (
     <div>
@@ -96,7 +117,7 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
               Welcome, {user?.name || 'Student'}
             </h2>
             <p className="text-muted" style={{ fontSize: '0.85rem' }}>
-              Roll Number: <strong style={{ color: '#fff' }}>{user?.roll_number || 'N/A'}</strong> | Department: {user?.department || 'Computer Science'} | Sem {user?.semester || 6}-{user?.section || 'A'}
+              Roll Number: <strong style={{ color: '#fff' }}>{profile.roll_number || 'N/A'}</strong> | Department: {profile.department || 'Computer Science'} | Sem {profile.semester || 6}-{profile.section || 'A'}
             </p>
           </div>
 
@@ -151,7 +172,7 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{sess.date}</span>
                     </div>
                     <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-                      Subject: {sess.subject_id}
+                      Subject: {sess.subject_code ? `${sess.subject_code} — ${sess.subject_name}` : sess.subject_name || sess.subject_id}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                       Sem {sess.semester} - Section {sess.section}
@@ -174,7 +195,8 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
                 Voice Biometric Verification for Session {selectedSession.id}
               </h4>
 
-              <AudioVisualizer isRecording={isRecording} levels={audioLevels} />
+                <AudioVisualizer isRecording={isRecording} levels={audioLevels} />
+                {recordingError && <p className="text-muted" style={{ color: 'var(--accent-danger)', fontSize: '0.8rem', marginBottom: '0.75rem', textAlign: 'center' }}>{recordingError}</p>}
 
               <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
                 <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
@@ -234,8 +256,30 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
         </div>
       )}
 
+      {/* Subject Attendance */}
+      {(activeTab === 'dashboard' || activeTab === 'subjects') && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>My Subjects</h3>
+          <div className="table-container">
+            <table className="custom-table">
+              <thead><tr><th>Subject</th><th>Classes</th><th>Attended</th><th>Attendance</th></tr></thead>
+              <tbody>
+                {subjectAttendance.length ? subjectAttendance.map(subject => (
+                  <tr key={subject.subject_id}>
+                    <td>{subject.subject_code} — {subject.subject_name}</td>
+                    <td>{subject.total_classes}</td>
+                    <td>{subject.attended_classes}</td>
+                    <td>{subject.percentage}%</td>
+                  </tr>
+                )) : <tr><td colSpan="4">No subject attendance data available.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Student Attendance History */}
-      {(activeTab === 'dashboard' || activeTab === 'reports') && (
+      {(activeTab === 'dashboard' || activeTab === 'reports' || activeTab === 'history') && (
         <div className="card">
           <h3 style={{ marginBottom: '1rem' }}>Personal Attendance History</h3>
           <div className="table-container">
@@ -255,7 +299,7 @@ export const StudentDashboard = ({ setToast, user, activeTab = 'dashboard' }) =>
                     <tr key={rec.id || idx}>
                       <td>{rec.date}</td>
                       <td>{rec.time}</td>
-                      <td style={{ fontWeight: 600 }}>{rec.subject_id}</td>
+                      <td style={{ fontWeight: 600 }}>{rec.subject_code ? `${rec.subject_code} — ${rec.subject_name}` : rec.subject_name || rec.subject_id}</td>
                       <td>{rec.verification_score ? `${(rec.verification_score * 100).toFixed(1)}%` : 'N/A'}</td>
                       <td>
                         <span className="badge badge-success">PRESENT</span>

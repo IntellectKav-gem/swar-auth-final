@@ -3,14 +3,14 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://lcuzffaxenieuqxbmryc.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
 
 console.log('=== SWAR-AUTH SUPABASE DATABASE MANAGEMENT DEPLOYMENT ===');
 console.log('Target Supabase Project URL:', supabaseUrl);
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Error: SUPABASE_URL or SUPABASE_SERVICE_KEY missing in .env');
+  console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_KEY are required in .env');
   process.exit(1);
 }
 
@@ -33,8 +33,9 @@ async function testSupabaseConnection() {
     }
 
     console.log(`\nSupabase Database Status Summary: ${accessibleTables}/${tables.length} tables verified.`);
-    console.log('\nTo apply the full PostgreSQL DDL schema with RLS policies, execute database/supabase_schema.sql in the Supabase SQL Editor.');
-    console.log('Schema File Path: database/supabase_schema.sql');
+    console.log('\nApply database/migration.sql followed by database/rls_backend_only.sql in the Supabase SQL Editor.');
+    console.log('Canonical schema: database/migration.sql');
+    console.log('RLS hardening: database/rls_backend_only.sql');
   } catch (err) {
     console.error('Supabase connection error:', err.message);
   }

@@ -154,7 +154,7 @@ const getActiveSessionsForStudent = async (req, res) => {
         : 0;
 
       validSessions.push({
-        session_id: expiredSession.id,
+        id: expiredSession.id,
         subject_id: expiredSession.subject_id,
         subject_name: subj.subject_name || 'Unknown',
         subject_code: subj.subject_code || '',

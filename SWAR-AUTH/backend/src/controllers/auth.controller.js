@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { queryOne, insertRecord } = require('../config/db');
+const { issueToken, revokeToken } = require('../services/token.service');
 
 const createJwtToken = (user, profile) => {
   const payload = {
@@ -11,11 +11,8 @@ const createJwtToken = (user, profile) => {
     profileId: profile ? profile.id : null,
     profile
   };
-  const jwtSecret = process.env.JWT_SECRET || 'swar_auth_jwt_secret_key_2026';
-  return {
-    payload,
-    token: jwt.sign(payload, jwtSecret, { expiresIn: '24h' })
-  };
+  const { token } = issueToken(payload);
+  return { payload, token };
 };
 
 const register = async (req, res) => {
@@ -35,8 +32,12 @@ const register = async (req, res) => {
     if (!name || !email || !password || !role) {
       return res.status(400).json({ error: 'Name, email, password, and role are required' });
     }
+    if (String(password).length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
 
-    const userRole = role.toLowerCase();
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const userRole = String(role).trim().toLowerCase();
     if (!['admin', 'faculty', 'student'].includes(userRole)) {
       return res.status(400).json({ error: 'Invalid role. Must be admin, faculty, or student' });
     }
@@ -47,7 +48,7 @@ const register = async (req, res) => {
       });
     }
 
-    const existingUser = await queryOne('users', { email: email.toLowerCase() });
+    const existingUser = await queryOne('users', { email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'Email address is already registered' });
     }
@@ -76,7 +77,7 @@ const register = async (req, res) => {
     const user = await insertRecord('users', {
       id: userId,
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: passwordHash,
       role: userRole
     });
@@ -116,8 +117,9 @@ const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    const user = await queryOne('users', { email: email.toLowerCase() });
+    const user = await queryOne('users', { email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -171,6 +173,7 @@ const getMe = async (req, res) => {
 };
 
 const logout = async (req, res) => {
+  revokeToken(req.user);
   return res.status(200).json({ message: 'Logged out successfully' });
 };
 

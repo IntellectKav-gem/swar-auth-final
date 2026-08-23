@@ -54,7 +54,7 @@ const getFacultyDailyReport = async (req, res) => {
     });
   } catch (err) {
     console.error('Get faculty daily report error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Internal server error' });
   }
 };
 
@@ -66,6 +66,12 @@ const getFacultySubjectReport = async (req, res) => {
 
     const subject = await queryOne('subjects', { id: subject_id });
     if (!subject) return res.status(404).json({ error: 'Subject not found' });
+
+    const faculty = await queryOne('faculty', { user_id: req.user.id });
+    if (!faculty) return res.status(404).json({ error: 'Faculty profile not found' });
+    if (subject.faculty_id !== faculty.id) {
+      return res.status(403).json({ error: 'Faculty does not own this subject' });
+    }
 
     const totalSessions = (await queryMany('attendance_sessions', { subject_id })).length;
     const enrolledStudents = await queryMany('students', {
@@ -102,7 +108,7 @@ const getFacultySubjectReport = async (req, res) => {
     });
   } catch (err) {
     console.error('Get faculty subject report error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Internal server error' });
   }
 };
 
@@ -138,7 +144,7 @@ const getAdminDepartmentReport = async (req, res) => {
     });
   } catch (err) {
     console.error('Get admin department report error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Internal server error' });
   }
 };
 
