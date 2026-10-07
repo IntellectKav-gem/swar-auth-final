@@ -40,9 +40,13 @@ CREATE TABLE IF NOT EXISTS subjects (
 CREATE TABLE IF NOT EXISTS voice_profiles (
     id TEXT PRIMARY KEY,
     student_id TEXT UNIQUE NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    faculty_id TEXT REFERENCES faculty(id) ON DELETE SET NULL,
     embedding TEXT NOT NULL, -- Stored as JSON stringified float array
     sample_count INTEGER DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    storage_bucket TEXT DEFAULT 'voice-recordings',
+    storage_paths TEXT DEFAULT '[]',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS attendance_sessions (

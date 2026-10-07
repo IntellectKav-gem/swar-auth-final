@@ -73,8 +73,11 @@ CREATE TABLE IF NOT EXISTS public.subjects (
 CREATE TABLE IF NOT EXISTS public.voice_profiles (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     student_id TEXT UNIQUE NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    faculty_id TEXT REFERENCES public.faculty(id) ON DELETE SET NULL,
     embedding TEXT NOT NULL, -- JSON stringified float array
     sample_count INT DEFAULT 5 CHECK (sample_count = 5),
+    storage_bucket TEXT DEFAULT 'voice-recordings',
+    storage_paths TEXT DEFAULT '[]',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

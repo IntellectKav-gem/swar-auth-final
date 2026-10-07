@@ -6,3 +6,4 @@ This folder contains project documentation, requirements, and architecture notes
 - SRS
 - Diagrams
 - Architecture notes
+

@@ -1,8 +1,9 @@
 const path = require('path');
+const os = require('os');
 const multer = require('multer');
 const fs = require('fs');
 
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+const uploadDir = path.join(os.tmpdir(), 'swar-auth-voice');
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });

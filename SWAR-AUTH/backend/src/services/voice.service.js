@@ -1,7 +1,9 @@
 const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { supabase } = require('../config/db');
 
+const STORAGE_BUCKET_NAME = 'voice-recordings';
 const scriptPath = path.join(__dirname, '..', '..', 'voice_engine.py');
 const defaultVenvPython = path.join(
   __dirname,
@@ -12,6 +14,61 @@ const defaultVenvPython = path.join(
   process.platform === 'win32' ? 'python.exe' : 'python'
 );
 const pythonExec = process.env.VOICE_PYTHON_PATH || defaultVenvPython;
+
+async function ensureVoiceBucket() {
+  try {
+    const { data: buckets = [], error: listError } = await supabase.storage.listBuckets();
+    if (listError) throw listError;
+
+    const existingBucket = buckets.find(bucket => bucket.name === STORAGE_BUCKET_NAME);
+    if (existingBucket) return { name: existingBucket.name, public: false };
+
+    const { data, error } = await supabase.storage.createBucket(STORAGE_BUCKET_NAME, {
+      public: false,
+      allowedMimeTypes: ['audio/wav', 'audio/x-wav']
+    });
+    if (error && !String(error.message).toLowerCase().includes('already exists')) throw error;
+
+    return { name: data?.name || STORAGE_BUCKET_NAME, public: false };
+  } catch (err) {
+    console.warn(`Supabase voice bucket setup warning: ${err.message || err}`);
+    return { name: STORAGE_BUCKET_NAME, public: false };
+  }
+}
+
+async function uploadVoiceSamples(samplePaths, metadata = {}) {
+  const { studentId, facultyId, rollNumber } = metadata;
+  const bucket = await ensureVoiceBucket();
+  const uploaded = [];
+
+  for (let index = 0; index < samplePaths.length; index += 1) {
+    const samplePath = samplePaths[index];
+    if (!samplePath || !fs.existsSync(samplePath)) continue;
+
+    const extension = path.extname(samplePath) || '.wav';
+    const baseName = path.basename(samplePath, extension).replace(/[^a-zA-Z0-9_.-]+/g, '_') || `sample-${index + 1}`;
+    const objectPath = [
+      facultyId || 'faculty',
+      studentId || 'student',
+      rollNumber || 'unknown',
+      `${baseName}-${Date.now()}-${index}${extension}`
+    ].join('/');
+    const sampleBuffer = fs.readFileSync(samplePath);
+    const { data, error } = await supabase.storage.from(bucket.name).upload(objectPath, sampleBuffer, {
+      contentType: 'audio/wav',
+      upsert: true
+    });
+    if (error) throw new Error(`Supabase voice upload failed for ${samplePath}: ${error.message}`);
+
+    uploaded.push({
+      path: data?.path || objectPath,
+      bucket: bucket.name,
+      file_name: path.basename(samplePath)
+    });
+  }
+
+  return uploaded;
+}
 
 function createVoiceEngineError(message, cause) {
   const error = new Error(message);
@@ -98,6 +155,8 @@ async function compareVoice(samplePath, enrolledEmbedding) {
 }
 
 module.exports = {
+  ensureVoiceBucket,
+  uploadVoiceSamples,
   extractEmbedding,
   compareVoice
 };

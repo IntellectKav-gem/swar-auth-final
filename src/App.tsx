@@ -1,18 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactDOM from 'react-dom/client';
-import { authApi } from './api/authApi';
-import Sidebar from './components/common/Sidebar';
-import Navbar from './components/common/Navbar';
-import Toast from './components/common/Toast';
-import SwarBackground from './components/common/SwarBackground';
-import { LoginPage } from './pages/LoginPage';
-import { FacultyDashboard } from './pages/FacultyDashboard';
-import { StudentDashboard } from './pages/StudentDashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
+import { authApi } from '../SWAR-AUTH/frontend/src/api/authApi';
+import Sidebar from '../SWAR-AUTH/frontend/src/components/common/Sidebar';
+import Navbar from '../SWAR-AUTH/frontend/src/components/common/Navbar';
+import Toast from '../SWAR-AUTH/frontend/src/components/common/Toast';
+import SwarBackground from './components/SwarBackground';
+import { LoginPage } from '../SWAR-AUTH/frontend/src/pages/LoginPage';
+import { FacultyDashboard } from '../SWAR-AUTH/frontend/src/pages/FacultyDashboard';
+import { StudentDashboard } from '../SWAR-AUTH/frontend/src/pages/StudentDashboard';
+import { AdminDashboard } from '../SWAR-AUTH/frontend/src/pages/AdminDashboard';
 import './index.css';
 
-const App = () => {
-  const [user, setUser] = useState(() => {
+export default function App() {
+  const [user, setUser] = useState<any>(() => {
     try {
       const savedUser = localStorage.getItem('swar_user');
       return savedUser ? JSON.parse(savedUser) : null;
@@ -21,9 +20,9 @@ const App = () => {
     }
   });
 
-  const [token, setToken] = useState(() => localStorage.getItem('swar_token') || '');
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [toast, setToast] = useState(null);
+  const [token, setToken] = useState<string>(() => localStorage.getItem('swar_token') || '');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -45,7 +44,7 @@ const App = () => {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const handleLoginSuccess = async (nextToken, nextUser) => {
+  const handleLoginSuccess = (nextToken: string, nextUser: any) => {
     setToken(nextToken);
     setUser(nextUser);
     setActiveTab('dashboard');
@@ -93,7 +92,7 @@ const App = () => {
             ) : role === 'admin' ? (
               <AdminDashboard {...commonProps} />
             ) : (
-              <div className="card">
+              <div className="card card-glass">
                 <h2>Access restricted</h2>
                 <p className="text-muted">This dashboard is reserved for authorized accounts.</p>
               </div>
@@ -111,10 +110,4 @@ const App = () => {
       {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
     </>
   );
-};
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+}

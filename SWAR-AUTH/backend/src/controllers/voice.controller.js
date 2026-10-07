@@ -1,5 +1,6 @@
+const fs = require('fs');
 const { queryOne, queryMany, insertRecord, updateRecords } = require('../config/db');
-const { extractEmbedding, compareVoice } = require('../services/voice.service');
+const { extractEmbedding, compareVoice, uploadVoiceSamples } = require('../services/voice.service');
 
 const enrollVoiceByFaculty = async (req, res) => {
   try {
@@ -33,41 +34,76 @@ const enrollVoiceByFaculty = async (req, res) => {
       return res.status(404).json({ error: `Student not found for roll number / ID: ${roll_number || student_id}` });
     }
 
-    const sampleFiles = req.files.map(f => f.path);
-    const embedding = await extractEmbedding(sampleFiles);
+    const faculty = req.user && req.user.role === 'faculty'
+      ? await queryOne('faculty', { user_id: req.user.id })
+      : null;
 
-    const existingProfile = await queryOne('voice_profiles', { student_id: student.id });
-    if (existingProfile) {
-      await updateRecords(
-        'voice_profiles',
-        { student_id: student.id },
-        {
-          embedding: JSON.stringify(embedding),
-          sample_count: sampleFiles.length,
-          updated_at: new Date().toISOString()
-        },
-        true
-      );
-    } else {
-      const vpId = `vp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-      await insertRecord('voice_profiles', {
-        id: vpId,
-        student_id: student.id,
-        embedding: JSON.stringify(embedding),
-        sample_count: sampleFiles.length
+    if (!faculty) {
+      return res.status(403).json({
+        error: 'Faculty profile not found for this account. Please re-login with a valid faculty account.'
       });
     }
 
-    const user = await queryOne('users', { id: student.user_id });
+    const sampleFiles = req.files.map(f => f.path);
+    let uploadedSamples = [];
+    try {
+      const embedding = await extractEmbedding(sampleFiles);
+      uploadedSamples = await uploadVoiceSamples(sampleFiles, {
+        facultyId: faculty.id,
+        studentId: student.id,
+        rollNumber: student.roll_number
+      });
 
-    return res.status(200).json({
-      message: `Voice biometric enrollment registered successfully by Faculty for student ${user ? user.name : student.roll_number}`,
-      student_id: student.id,
-      roll_number: student.roll_number,
-      student_name: user ? user.name : 'Unknown',
-      sample_count: sampleFiles.length,
-      is_enrolled: true
-    });
+      const existingProfile = await queryOne('voice_profiles', { student_id: student.id });
+      const storagePaths = uploadedSamples.map(sample => sample.path);
+      const profilePayload = {
+        faculty_id: faculty.id,
+        embedding: JSON.stringify(embedding),
+        sample_count: sampleFiles.length,
+        storage_bucket: 'voice-recordings',
+        storage_paths: JSON.stringify(storagePaths),
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingProfile) {
+        await updateRecords(
+          'voice_profiles',
+          { student_id: student.id },
+          profilePayload,
+          true
+        );
+      } else {
+        const vpId = `vp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+        await insertRecord('voice_profiles', {
+          id: vpId,
+          student_id: student.id,
+          faculty_id: faculty.id,
+          embedding: JSON.stringify(embedding),
+          sample_count: sampleFiles.length,
+          storage_bucket: 'voice-recordings',
+          storage_paths: JSON.stringify(storagePaths)
+        });
+      }
+
+      const user = await queryOne('users', { id: student.user_id });
+
+      return res.status(200).json({
+        message: `Voice biometric enrollment registered successfully by Faculty for student ${user ? user.name : student.roll_number}`,
+        student_id: student.id,
+        roll_number: student.roll_number,
+        student_name: user ? user.name : 'Unknown',
+        sample_count: sampleFiles.length,
+        storage_bucket: 'voice-recordings',
+        storage_paths: storagePaths,
+        is_enrolled: true
+      });
+    } finally {
+      sampleFiles.forEach(fp => {
+        try {
+          if (fs.existsSync(fp)) fs.unlinkSync(fp);
+        } catch (e) {}
+      });
+    }
   } catch (err) {
     console.error('Faculty Voice enrollment error:', err);
     return res.status(err.status || 500).json({ error: err.message || 'Voice enrollment failed', code: err.code });
@@ -162,41 +198,49 @@ const verifyVoiceAndLogAttendance = async (req, res) => {
       });
     }
 
-    const enrolledEmbedding = JSON.parse(voiceProfile.embedding);
-    const verificationResult = await compareVoice(samplePath, enrolledEmbedding);
+    try {
+      const enrolledEmbedding = JSON.parse(voiceProfile.embedding);
+      const verificationResult = await compareVoice(samplePath, enrolledEmbedding);
 
-    if (!verificationResult.is_match) {
-      return res.status(401).json({
-        error: 'Voice verification failed. Voice signature does not match your Faculty-registered voice profile.',
-        similarity_score: verificationResult.similarity_score,
-        threshold: verificationResult.threshold
+      if (!verificationResult.is_match) {
+        return res.status(401).json({
+          error: 'Voice verification failed. Voice signature does not match your Faculty-registered voice profile.',
+          similarity_score: verificationResult.similarity_score,
+          threshold: verificationResult.threshold
+        });
+      }
+
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const attId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+
+      const attendanceRecord = await insertRecord('attendance', {
+        id: attId,
+        student_id: student.id,
+        subject_id: session.subject_id,
+        session_id: session.id,
+        date: now.toISOString().split('T')[0],
+        time: timeStr,
+        status: 'present',
+        verification_score: verificationResult.similarity_score
       });
+
+      return res.status(200).json({
+        message: 'Voice authenticated successfully! Attendance recorded as PRESENT.',
+        verification: {
+          score: verificationResult.similarity_score,
+          threshold: verificationResult.threshold,
+          status: 'VERIFIED'
+        },
+        attendance: attendanceRecord
+      });
+    } finally {
+      if (samplePath) {
+        try {
+          if (fs.existsSync(samplePath)) fs.unlinkSync(samplePath);
+        } catch (e) {}
+      }
     }
-
-    const now = new Date();
-    const timeStr = now.toTimeString().split(' ')[0];
-    const attId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-
-    const attendanceRecord = await insertRecord('attendance', {
-      id: attId,
-      student_id: student.id,
-      subject_id: session.subject_id,
-      session_id: session.id,
-      date: now.toISOString().split('T')[0],
-      time: timeStr,
-      status: 'present',
-      verification_score: verificationResult.similarity_score
-    });
-
-    return res.status(200).json({
-      message: 'Voice authenticated successfully! Attendance recorded as PRESENT.',
-      verification: {
-        score: verificationResult.similarity_score,
-        threshold: verificationResult.threshold,
-        status: 'VERIFIED'
-      },
-      attendance: attendanceRecord
-    });
   } catch (err) {
     console.error('Voice verification error:', err);
     return res.status(err.status || 500).json({ error: err.message || 'Voice verification failed', code: err.code });

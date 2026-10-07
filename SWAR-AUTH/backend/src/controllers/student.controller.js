@@ -61,7 +61,7 @@ const getSubjectAttendance = async (req, res) => {
       const attendedSubjectSessions = studentAttendance.filter(a => a.subject_id === subj.id && a.status === 'present').length;
       const percentage = totalSubjectSessions > 0
         ? parseFloat(((attendedSubjectSessions / totalSubjectSessions) * 100).toFixed(2))
-        : 100.0;
+        : 0;
 
       return {
         subject_id: subj.id,
@@ -97,7 +97,7 @@ const getOverallAttendance = async (req, res) => {
 
     const overallPercentage = totalSessions > 0
       ? parseFloat(((attendedRecords.length / totalSessions) * 100).toFixed(2))
-      : 100.0;
+      : 0;
 
     const subjects = await queryMany('subjects', {});
 

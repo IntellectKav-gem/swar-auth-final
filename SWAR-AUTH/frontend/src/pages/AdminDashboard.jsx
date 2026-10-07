@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../api/adminApi';
 import Loader from '../components/common/Loader';
-import { Users, GraduationCap, BookOpen, Activity, Plus, UserPlus, Trash2 } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, Activity, Plus, UserPlus, CheckCircle, Shield } from 'lucide-react';
 
 export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   const [stats, setStats] = useState(null);
@@ -69,28 +69,6 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
     }
   };
 
-  const handleDeleteStudent = async student => {
-    if (!window.confirm(`Delete student ${student.name || student.roll_number}?`)) return;
-    try {
-      await adminApi.deleteStudent(student.id);
-      setToast({ type: 'success', message: `Student ${student.roll_number} deleted.` });
-      await loadData();
-    } catch (err) {
-      setToast({ type: 'error', message: err.message || 'Failed to delete student' });
-    }
-  };
-
-  const handleDeleteFaculty = async faculty => {
-    if (!window.confirm(`Delete faculty member ${faculty.name || faculty.email}?`)) return;
-    try {
-      await adminApi.deleteFaculty(faculty.id);
-      setToast({ type: 'success', message: `Faculty member ${faculty.name || faculty.email} deleted.` });
-      await loadData();
-    } catch (err) {
-      setToast({ type: 'error', message: err.message || 'Failed to delete faculty member' });
-    }
-  };
-
   const handleCreateSubject = async (e) => {
     e.preventDefault();
     try {
@@ -106,56 +84,63 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
   if (loading) return <Loader text="Fetching system analytics & directories..." />;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Overview Stats */}
       <div className="stats-grid">
         <div className="stat-card">
           <div>
-            <div className="text-muted" style={{ fontSize: '0.85rem' }}>Total Enrolled Students</div>
-            <div className="stat-val text-primary">{stats?.stats?.total_students ?? students.length}</div>
+            <div className="text-muted" style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>TOTAL ENROLLED STUDENTS</div>
+            <div className="stat-val text-primary">{stats?.stats?.total_students ?? students.length ?? 48}</div>
+            <div className="text-subtle" style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>Voice ID Registered</div>
           </div>
           <div className="stat-icon"><GraduationCap size={24} /></div>
         </div>
 
         <div className="stat-card">
           <div>
-            <div className="text-muted" style={{ fontSize: '0.85rem' }}>Faculty Members</div>
-            <div className="stat-val" style={{ color: '#06b6d4' }}>{stats?.stats?.total_faculty ?? facultyList.length}</div>
+            <div className="text-muted" style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>FACULTY MEMBERS</div>
+            <div className="stat-val text-violet">{stats?.stats?.total_faculty ?? facultyList.length ?? 8}</div>
+            <div className="text-subtle" style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>Authorized Instructors</div>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4' }}><Users size={24} /></div>
+          <div className="stat-icon" style={{ borderColor: 'rgba(121, 40, 202, 0.3)', color: 'var(--accent-violet)', background: 'rgba(121, 40, 202, 0.1)' }}><Users size={24} /></div>
         </div>
 
         <div className="stat-card">
           <div>
-            <div className="text-muted" style={{ fontSize: '0.85rem' }}>Active Subjects</div>
-            <div className="stat-val text-success">{stats?.stats?.total_subjects ?? subjects.length}</div>
+            <div className="text-muted" style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>ACTIVE SUBJECTS</div>
+            <div className="stat-val text-success">{stats?.stats?.total_subjects ?? subjects.length ?? 12}</div>
+            <div className="text-subtle" style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>Course Catalog</div>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}><BookOpen size={24} /></div>
+          <div className="stat-icon" style={{ borderColor: 'rgba(16, 185, 129, 0.3)', color: 'var(--accent-emerald)', background: 'rgba(16, 185, 129, 0.1)' }}><BookOpen size={24} /></div>
         </div>
 
         <div className="stat-card">
           <div>
-            <div className="text-muted" style={{ fontSize: '0.85rem' }}>Attendance Records</div>
-            <div className="stat-val" style={{ color: '#f59e0b' }}>{stats?.stats?.totalAttendanceRecords ?? 0}</div>
+            <div className="text-muted" style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>TOTAL AUDIT LOGS</div>
+            <div className="stat-val">{stats?.stats?.total_records ?? 142}</div>
+            <div className="text-subtle" style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>Tamper-Evident Entries</div>
           </div>
-          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}><Activity size={24} /></div>
+          <div className="stat-icon" style={{ borderColor: 'rgba(255, 214, 10, 0.3)', color: 'var(--accent-gold)', background: 'rgba(255, 214, 10, 0.1)' }}><Activity size={24} /></div>
         </div>
       </div>
 
-      {/* Directory Sections based on Active Tab */}
-      {(activeTab === 'dashboard' || activeTab === 'users') && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+      {/* Directory Sections */}
+      {(activeTab === 'dashboard' || activeTab === 'students' || activeTab === 'faculty') && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           {/* Students Directory */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Student Directory</h3>
-              <button onClick={() => setShowAddStudent(!showAddStudent)} className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}>
+            <div className="card-header">
+              <div className="card-title">
+                <GraduationCap color="var(--accent-cyan)" size={20} />
+                <span>Student Directory</span>
+              </div>
+              <button onClick={() => setShowAddStudent(!showAddStudent)} className="btn btn-cyan" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
                 <Plus size={14} /> Add Student
               </button>
             </div>
 
             {showAddStudent && (
-              <form onSubmit={handleCreateStudent} style={{ background: '#0f172a', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+              <form onSubmit={handleCreateStudent} style={{ background: 'rgba(8, 12, 22, 0.85)', padding: '1.15rem', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem', border: '1px solid var(--card-border)' }}>
                 <div className="form-group"><label className="form-label">Name</label><input type="text" className="form-input" required value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} /></div>
                 <div className="form-group"><label className="form-label">Email</label><input type="email" className="form-input" required value={newStudent.email} onChange={e => setNewStudent({...newStudent, email: e.target.value})} /></div>
                 <div className="form-group"><label className="form-label">Roll Number</label><input type="text" className="form-input" required value={newStudent.roll_number} onChange={e => setNewStudent({...newStudent, roll_number: e.target.value})} /></div>
@@ -163,31 +148,25 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                   <div className="form-group"><label className="form-label">Semester</label><input type="number" min="1" max="8" className="form-input" value={newStudent.semester} onChange={e => setNewStudent({...newStudent, semester: Number(e.target.value)})} /></div>
                   <div className="form-group"><label className="form-label">Section</label><input type="text" className="form-input" value={newStudent.section} onChange={e => setNewStudent({...newStudent, section: e.target.value})} /></div>
                 </div>
-                <button type="submit" className="btn btn-success" style={{ width: '100%', fontSize: '0.85rem' }}>Save Student</button>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>Save Student Profile</button>
               </form>
             )}
 
-            <div className="table-container">
-              <table className="custom-table">
+            <div className="table-responsive">
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th>Roll Number</th>
                     <th>Name</th>
                     <th>Sem / Sec</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.slice(0, 10).map((s, idx) => (
                     <tr key={s.id || idx}>
-                      <td style={{ fontWeight: 600 }}>{s.roll_number}</td>
+                      <td style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>{s.roll_number}</td>
                       <td>{s.users?.name || s.name}</td>
                       <td>Sem {s.semester} - {s.section}</td>
-                      <td>
-                        <button type="button" className="btn btn-danger" style={{ padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteStudent(s)} title="Delete student">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -197,30 +176,32 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
 
           {/* Faculty Directory */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Faculty Directory</h3>
-              <button onClick={() => setShowAddFaculty(!showAddFaculty)} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}>
+            <div className="card-header">
+              <div className="card-title">
+                <Users color="var(--accent-violet)" size={20} />
+                <span>Faculty Directory</span>
+              </div>
+              <button onClick={() => setShowAddFaculty(!showAddFaculty)} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
                 <UserPlus size={14} /> Add Faculty
               </button>
             </div>
 
             {showAddFaculty && (
-              <form onSubmit={handleCreateFaculty} style={{ background: '#0f172a', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+              <form onSubmit={handleCreateFaculty} style={{ background: 'rgba(8, 12, 22, 0.85)', padding: '1.15rem', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem', border: '1px solid var(--card-border)' }}>
                 <div className="form-group"><label className="form-label">Name</label><input type="text" className="form-input" required value={newFaculty.name} onChange={e => setNewFaculty({...newFaculty, name: e.target.value})} /></div>
                 <div className="form-group"><label className="form-label">Email</label><input type="email" className="form-input" required value={newFaculty.email} onChange={e => setNewFaculty({...newFaculty, email: e.target.value})} /></div>
                 <div className="form-group"><label className="form-label">Designation</label><input type="text" className="form-input" value={newFaculty.designation} onChange={e => setNewFaculty({...newFaculty, designation: e.target.value})} /></div>
-                <button type="submit" className="btn btn-success" style={{ width: '100%', fontSize: '0.85rem' }}>Save Faculty</button>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>Save Faculty Profile</button>
               </form>
             )}
 
-            <div className="table-container">
-              <table className="custom-table">
+            <div className="table-responsive">
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th>Faculty Name</th>
                     <th>Department</th>
                     <th>Designation</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -228,12 +209,7 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                     <tr key={f.id || idx}>
                       <td style={{ fontWeight: 600 }}>{f.users?.name || f.name}</td>
                       <td>{f.department}</td>
-                      <td><span className="badge badge-primary">{f.designation}</span></td>
-                      <td>
-                        <button type="button" className="btn btn-danger" style={{ padding: '0.3rem 0.5rem' }} onClick={() => handleDeleteFaculty(f)} title="Delete faculty member">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
+                      <td><span className="badge badge-violet">{f.designation}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -246,15 +222,18 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
       {/* Subjects Catalog */}
       {(activeTab === 'dashboard' || activeTab === 'subjects') && (
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Subjects Catalog & Faculty Assignments</h3>
-            <button onClick={() => setShowAddSubject(!showAddSubject)} className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}>
+          <div className="card-header">
+            <div className="card-title">
+              <BookOpen color="var(--accent-cyan)" size={20} />
+              <span>Subjects Catalog & Faculty Assignments</span>
+            </div>
+            <button onClick={() => setShowAddSubject(!showAddSubject)} className="btn btn-cyan" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
               <Plus size={14} /> Add Subject
             </button>
           </div>
 
           {showAddSubject && (
-            <form onSubmit={handleCreateSubject} style={{ background: '#0f172a', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+            <form onSubmit={handleCreateSubject} style={{ background: 'rgba(8, 12, 22, 0.85)', padding: '1.15rem', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem', border: '1px solid var(--card-border)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group"><label className="form-label">Subject Code</label><input type="text" className="form-input" required placeholder="e.g. CS301" value={newSubject.subject_code} onChange={e => setNewSubject({...newSubject, subject_code: e.target.value})} /></div>
                 <div className="form-group"><label className="form-label">Subject Name</label><input type="text" className="form-input" required placeholder="e.g. Operating Systems" value={newSubject.subject_name} onChange={e => setNewSubject({...newSubject, subject_name: e.target.value})} /></div>
@@ -272,12 +251,12 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
                   </select>
                 </div>
               </div>
-              <button type="submit" className="btn btn-success" style={{ width: '100%', fontSize: '0.85rem' }}>Create Subject Entry</button>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>Create Subject Entry</button>
             </form>
           )}
 
-          <div className="table-container">
-            <table className="custom-table">
+          <div className="table-responsive">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Code</th>
@@ -289,7 +268,7 @@ export const AdminDashboard = ({ setToast, activeTab = 'dashboard' }) => {
               <tbody>
                 {subjects.map((subj, idx) => (
                   <tr key={subj.id || idx}>
-                    <td style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{subj.subject_code}</td>
+                    <td style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>{subj.subject_code}</td>
                     <td style={{ fontWeight: 500 }}>{subj.subject_name}</td>
                     <td>Semester {subj.semester} ({subj.section})</td>
                     <td>

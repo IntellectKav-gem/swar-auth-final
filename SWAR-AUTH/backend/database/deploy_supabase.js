@@ -16,6 +16,38 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+async function ensureVoiceBucket() {
+  try {
+    const bucketName = 'voice-recordings';
+    const { data: buckets = [], error: listError } = await supabase.storage.listBuckets();
+
+    if (listError) {
+      throw listError;
+    }
+
+    const existingBucket = buckets.find(bucket => bucket.name === bucketName);
+    if (existingBucket) {
+      console.log(` - Storage bucket '${bucketName}': CONNECTED & ACCESSIBLE (Status: OK)`);
+      return existingBucket;
+    }
+
+    const { data, error } = await supabase.storage.createBucket(bucketName, {
+      public: false,
+      allowedMimeTypes: ['audio/wav', 'audio/x-wav']
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(` - Storage bucket '${bucketName}': CREATED (Status: OK)`);
+    return data;
+  } catch (err) {
+    console.warn(` - Storage bucket 'voice-recordings': unavailable or inaccessible (${err.message})`);
+    return null;
+  }
+}
+
 async function testSupabaseConnection() {
   try {
     console.log('Connecting to Supabase...');
@@ -31,6 +63,8 @@ async function testSupabaseConnection() {
         console.log(` - Table '${table}': CONNECTED & ACCESSIBLE (Status: OK)`);
       }
     }
+
+    await ensureVoiceBucket();
 
     console.log(`\nSupabase Database Status Summary: ${accessibleTables}/${tables.length} tables verified.`);
     console.log('\nApply database/migration.sql followed by database/rls_backend_only.sql in the Supabase SQL Editor.');
